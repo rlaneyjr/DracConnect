@@ -1,0 +1,54 @@
+#!/usr/bin/env bash -e
+# -*- coding: utf-8 -*-
+# vim: noai:et:tw=80:ts=2:ss=2:sts=2:sw=2:ft=bash
+# Author: Ricky Laney
+# License: MIT
+# The 'bash -e' is the same as set -e (Exit immediately upon error)
+# Add an 'x' like 'bash -ex' or set -ex and every line is printed
+
+show_help () {
+  echo "Usage: $(basename $0) <options>";
+  echo;
+  echo "Options:";
+  echo " -h | --help   = Help, show this message.";
+  echo " -r | --host=<NAME>   = iDRAC IP Address (Mandatory).";
+  echo " -u | --user=<USER>   = iDRAC user name (Default 'rlaney')";
+  echo " -p | --pass=<PASS>   = iDRAC password (Default 'ralrox22')";
+}
+
+OPTS=$(getopt -o hr:u:p: --long help,host:,user:,pass: -n 'help' -- $*)
+
+if [ $? != 0 ]
+then
+  echo "Failed parsing options." >&2
+  echo "$OPTS"
+  show_help && exit 255
+fi
+
+echo "Before eval: $OPTS"
+eval set -- "$OPTS"
+echo "After eval: $OPTS"
+
+while true; do
+  case $1 in
+    -h | --help )    show_help; exit 0; shift ;;
+    -r | --host )    host=$2; shift 2 ;;
+    -u | --user )    user=$2; shift 2 ;;
+    -p | --pass )    pass=$2; shift 2 ;;
+    -- ) shift; break ;;
+    * ) echo "Invalid arguments!"; show_help; exit 1 ;;
+  esac
+done
+
+if [ -z $host ]; then
+    show_help
+    exit 1
+fi
+
+if [ -z $user ] || [ -z $pass ]; then
+  user="rlaney"
+  pass="ralrox"
+fi
+
+./jre/bin/java -cp avctKVM.jar -Djava.library.path=./lib com.avocent.idrac.kvm.Main ip=$host kmport=5900 vport=5900 user=$user passwd=$pass apcp=1 version=2 vmprivilege=true "helpurl=https://$host:443/help/contents.html"
+
